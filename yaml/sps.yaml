@@ -1,0 +1,7 @@
+sps:
+  gcp_bucket: "sps_feeds_dev"
+  gcp_bucket_hist: "sps_feeds_hist_dev"
+  first_day: 3
+  activity_file_name: "Activity_Channel_"
+  product_file_name: "Product_Channel_"
+  location_file_name: "Location_"

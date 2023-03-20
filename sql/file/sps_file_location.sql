@@ -1,0 +1,1 @@
+SELECT * FROM @ds_stg.vi_sps_agg_locations
