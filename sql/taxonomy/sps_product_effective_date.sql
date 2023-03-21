@@ -11,8 +11,7 @@ group by 1,2,3 order by 1;
 
 CREATE  or replace TABLE {{ params.ds_stg }}.sps_chnnl_upc AS
 SELECT distinct
-    dim_products.sku  AS sku,
-	dim_products_scd.effective_date as effective_date,
+    dim_products.sku  AS sku,	
     coalesce(dim_products_scd.upc, dim_products.upc) AS upc
 FROM
 {{ params.ds_elcap }}.vi_nested_sb_customer_transactions
@@ -24,11 +23,14 @@ LEFT JOIN
       {{ params.ds_elcap }}.vi_sb_products_no_loyalty_sku
       AS dim_products ON nested_sb_customer_transactions_daily__details.sku = dim_products.sku
 join {{ params.ds_stg }}.sps_chnnl_summary chn on chn.sku=dim_products.sku
-JOIN
-(select eff.effective_date as effective_date,upc,eff.sku from
-      {{ params.ds_elcap }}.vi_sb_products_scd_no_loyalty_sku scd join elcap_stg_dev.products_scd_eff_date eff on  (eff.sku=scd.sku and scd.effective_date=eff.effective_date))
+join {{ params.ds_stg }}.sps_week_ending_date we on(1=1)
+Left JOIN
+
+      {{ params.ds_elcap }}.vi_sb_products_scd_no_loyalty_sku 
       AS dim_products_scd ON  nested_sb_customer_transactions_daily__details.sku = dim_products_scd.sku
-                and  (DATE(Transactions_Nested.sb_event_date , 'America/Denver')) = dim_products_scd.effective_date
+                and  DATE(we.end_of_week) >= dim_products_scd.effective_date
+                and  DATE(we.end_of_week)< dim_products_scd.expiration_date
+
 
 LEFT JOIN {{ params.ds_elcap }}.dim_dates  AS partition_dim_dates ON (DATE(Transactions_Nested.sb_event_date , 'America/Denver')) = (DATE(partition_dim_dates.calendar_date , 'America/Denver'))
 
@@ -48,5 +50,4 @@ and partition_dim_dates.fiscal_yr_no = (select fiscal_yr_no from {{ params.ds_st
 and partition_dim_dates.fiscal_wk_no = (select fiscal_wk_no from {{ params.ds_stg }}.sps_week_ending_date)
 GROUP BY
     1,
-    2,
-	3;
+    2	;
